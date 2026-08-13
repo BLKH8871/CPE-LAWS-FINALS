@@ -1,0 +1,1181 @@
+<!-- D:/school/CPE LAWS/templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Privacy Compliance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #F1F5F9; }
+        .sidebar { background-color: #0F172A; }
+        .header { height: 80px; }
+        .content { min-height: calc(100vh - 80px); }
+        .data-table thead { background-color: #1E293B; color: #E2E8F0; }
+        .data-table tbody tr:nth-child(even) { background-color: #F8FAFC; }
+        .modal {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="flex">
+    <!-- Fixed Sidebar -->
+    <aside class="sidebar w-[260px] text-slate-300 p-4 fixed h-full flex flex-col">
+        <h1 class="text-xl font-bold text-white mb-8">Compliance Portal</h1>
+        <nav>
+            <ul>
+                <!-- Links will be shown based on role -->
+                <li class="nav-link" id="link-dashboard"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">Main Dashboard</a></li>
+                <li class="nav-link hidden" id="link-user-dashboard"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">Dashboard</a></li>
+                <li class="nav-link hidden" id="link-my-data"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">My Data</a></li>
+                <li class="nav-link" id="link-my-consents"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">Consent Management</a></li>
+                <li class="nav-link hidden" id="link-processing-registry"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">Data Processing Registry</a></li>
+                <li class="nav-link hidden" id="link-privacy-notices"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">Privacy Notices</a></li>
+                <li class="nav-link hidden" id="link-dsr-requests"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">DSR Requests</a></li>
+                <li class="nav-link hidden" id="link-reporting-module"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">Reporting</a></li>
+                <li class="nav-link hidden" id="link-user-management"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">User Management</a></li>
+                <li class="nav-link hidden" id="link-audit-logs"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">System Audit Logs</a></li>
+            </ul>
+        </nav>
+        <div class="mt-auto">
+            <p class="text-sm">Logged in as: <strong id="user-display"></strong></p>
+            <a href="#" id="link-user-profile" class="block text-center mt-4 py-2 px-3 rounded bg-slate-600 hover:bg-slate-500 text-white">My Profile</a>
+            <a href="/logout" class="block text-center mt-2 py-2 px-3 rounded bg-red-600 hover:bg-red-700 text-white">Logout</a>
+        </div>
+    </aside>
+
+    <div id="dsr-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden modal z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-1/2">
+            <h3 id="dsr-modal-title" class="text-lg font-bold mb-4">DSR Request Details</h3>
+            <div id="dsr-modal-content"></div>
+            <div class="mt-4 flex justify-end">
+                <button type="button" id="cancel-dsr-btn" class="mr-2 text-gray-600">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Modal -->
+    <div id="user-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden modal z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-1/3">
+            <h3 id="user-modal-title" class="text-lg font-bold mb-4">Add New User</h3>
+            <form id="user-form">
+                <input type="hidden" name="id" id="user-id">
+                <div class="mb-4">
+                    <label for="user-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input type="text" name="name" id="user-name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div class="mb-4">
+                    <label for="user-email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" name="email" id="user-email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div class="mb-4">
+                    <label for="user-password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" name="password" id="user-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <p id="password-help" class="text-xs text-gray-500 mt-1">Leave blank to keep current password when editing.</p>
+                </div>
+                <div class="mb-4">
+                    <label for="user-role" class="block text-sm font-medium text-gray-700">Role</label>
+                    <select name="role" id="user-role" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        <option value="User">User</option>
+                        <option value="DPO">DPO</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button type="button" id="cancel-user-btn" class="mr-4 text-gray-600">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Main Content -->
+    <div class="flex-1 ml-[260px]">
+        <header class="header bg-white shadow-md p-4 flex items-center justify-between">
+            <h2 id="page-title" class="text-2xl font-semibold text-slate-800">Dashboard</h2>
+            <div id="header-actions" class="inline-flex items-center space-x-4">
+                 <!-- Action buttons like export will appear here -->
+            </div>
+        </header>
+
+        <main id="main-content" class="p-6 content">
+            <!-- Dynamic content will be loaded here -->
+        </main>
+
+        <!-- Privacy Notice Modal -->
+        <div id="notice-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden modal z-50">
+            <div class="bg-white p-6 rounded-lg shadow-xl w-3/4 max-w-4xl">
+                <h3 id="notice-modal-title" class="text-lg font-bold mb-4">Create New Privacy Notice</h3>
+                <form id="notice-form">
+                    <input type="hidden" name="id" id="notice-id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="notice-title" class="block text-sm font-medium text-gray-700">Title</label>
+                            <input type="text" name="title" id="notice-title" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label for="notice-version" class="block text-sm font-medium text-gray-700">Version</label>
+                            <input type="text" name="version" id="notice-version" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="notice-content" class="block text-sm font-medium text-gray-700">Content</label>
+                        <div id="editor" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" style="min-height: 150px;"></div>
+                        <input type="hidden" name="content" id="notice-content">
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button type="button" id="cancel-notice-btn" class="mr-2 text-gray-600">Cancel</button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save Notice</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="add-registry-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden modal">
+             <div class="bg-white p-6 rounded-lg shadow-xl w-1/2">
+                 <h3 class="text-lg font-bold mb-4">Add New Processing Activity</h3>
+                 <form id="add-registry-form">
+                     <div class="grid grid-cols-2 gap-4">
+                         <input name="system_name" placeholder="System Name" class="border p-2 rounded w-full">
+                         <input name="purpose" placeholder="Purpose" class="border p-2 rounded w-full">
+                         <input name="data_categories" placeholder="Data Categories" class="border p-2 rounded w-full">
+                         <input name="legal_basis" placeholder="Legal Basis" class="border p-2 rounded w-full">
+                         <input name="retention_period" placeholder="Retention Period" class="border p-2 rounded w-full">
+                         <input name="owner" placeholder="Owner" class="border p-2 rounded w-full">
+                     </div>
+                     <div class="mt-4 flex justify-end">
+                         <button type="button" id="cancel-add-btn" class="mr-2 text-gray-600">Cancel</button>
+                         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                     </div>
+                 </form>
+             </div>
+         </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userRole = '{{ session.user_role }}';
+            const userName = '{{ session.user_name }}';
+
+            const userDisplay = document.getElementById('user-display');
+            userDisplay.textContent = `${userName} (${userRole})`;
+
+            // --- Role-Based UI Control ---
+            const navLinks = {
+                'User': ['link-user-dashboard', 'link-my-data', 'link-dsr-requests', 'link-privacy-notices', 'link-my-consents', 'link-user-profile'],
+                'DPO': ['link-dashboard', 'link-my-consents', 'link-processing-registry', 'link-privacy-notices', 'link-dsr-requests', 'link-reporting-module', 'link-audit-logs', 'link-user-profile'],
+                'Admin': ['link-dashboard', 'link-my-consents', 'link-processing-registry', 'link-privacy-notices', 'link-dsr-requests', 'link-reporting-module', 'link-user-management', 'link-audit-logs', 'link-user-profile']
+            };
+
+            const allLinks = document.querySelectorAll('.nav-link, #link-user-profile');
+            allLinks.forEach(link => link.classList.add('hidden')); // Hide all by default
+            if (navLinks[userRole]) {
+                navLinks[userRole].forEach(linkId => {
+                    const linkEl = document.getElementById(linkId);
+                    if (linkEl) linkEl.classList.remove('hidden');
+                });
+            }
+
+
+            let quill;
+            // --- Modal Handlers (Privacy Notice) ---
+            const noticeModal = document.getElementById('notice-modal');
+            const noticeForm = document.getElementById('notice-form');
+
+            document.getElementById('cancel-notice-btn').addEventListener('click', () => noticeModal.classList.add('hidden'));
+
+            noticeForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                formData.set('content', quill.root.innerHTML);
+                const id = formData.get('id');
+                const url = id ? `/privacy-notices/update/${id}` : '/privacy-notices/add';
+
+                await fetch(url, { method: 'POST', body: formData });
+                noticeModal.classList.add('hidden');
+                loadPrivacyNotices();
+            });
+
+            // --- Modal Handlers (Processing Registry) ---
+            const registryModal = document.getElementById('add-registry-modal');
+            const registryForm = document.getElementById('add-registry-form');
+
+            document.getElementById('cancel-add-btn').addEventListener('click', () => {
+                registryModal.classList.add('hidden');
+            });
+
+            registryForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const response = await fetch(e.target.action, { method: 'POST', body: formData });
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message || 'Action completed successfully!');
+                    registryModal.classList.add('hidden');
+                    loadProcessingRegistry();
+                } else {
+                    alert(`Error: ${result.error || 'An unknown error occurred.'}`);
+                }
+            });
+
+            const openRegistryModal = (item = null) => {
+                registryForm.reset();
+                const modalTitle = registryModal.querySelector('h3');
+                if(item) {
+                    registryForm.action = `/processing-registry/update/${item.id}`;
+                    modalTitle.textContent = 'Edit Processing Activity';
+                    for (const key in item) {
+                        if (registryForm.elements[key]) {
+                            registryForm.elements[key].value = item[key];
+                        }
+                    }
+                } else {
+                    registryForm.action = '/processing-registry/add';
+                    modalTitle.textContent = 'Add New Processing Activity';
+                }
+                registryModal.classList.remove('hidden');
+            };
+
+
+            // --- View Loaders ---
+            const mainContent = document.getElementById('main-content');
+            const pageTitle = document.getElementById('page-title');
+            const headerActions = document.getElementById('header-actions');
+
+            // --- Global Click Handler for delegated events ---
+            mainContent.addEventListener('click', async (e) => {
+                const target = e.target.closest('[data-action]');
+                if (!target) return;
+
+                const action = target.dataset.action;
+                const id = target.dataset.id;
+
+                if (action === 'edit-registry') {
+                    const item = JSON.parse(target.dataset.item);
+                    openRegistryModal(item);
+                }
+
+                if (action === 'delete-registry') {
+                    if (confirm('Are you sure you want to delete this item?')) {
+                        await fetch(`/processing-registry/delete/${id}`, { method: 'POST' });
+                        loadProcessingRegistry();
+                    }
+                }
+
+                if (action === 'edit-user') {
+                    const user = JSON.parse(target.dataset.user);
+                    openUserModal(user);
+                }
+
+                if (action === 'delete-user') {
+                    if (confirm('Are you sure you want to delete this user?')) {
+                        const response = await fetch(`/admin/users/delete/${id}`, { method: 'POST' });
+                        const result = await response.json();
+                        if (result.success) {
+                            alert(result.message);
+                            loadUserManagement();
+                        } else {
+                            alert(`Error: ${result.error}`);
+                        }
+                    }
+                }
+            });
+
+            const loadUserDashboard = async () => {
+                pageTitle.textContent = 'My Dashboard';
+                headerActions.innerHTML = '';
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading your dashboard...</div>`;
+                try {
+                    const response = await fetch('/api/user-dashboard');
+                    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                    const stats = await response.json();
+                    const activeConsents = stats.consents.Active || 0;
+                    const revokedConsents = stats.consents.Revoked || 0;
+
+                    let html = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                             <div class="bg-white p-4 rounded-lg shadow text-center">
+                                <h4 class="text-lg font-semibold text-gray-500">My Active Consents</h4>
+                                <p class="text-4xl font-bold text-green-600">${activeConsents}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg shadow text-center">
+                                <h4 class="text-lg font-semibold text-gray-500">Open DSR Requests</h4>
+                                <p class="text-4xl font-bold text-blue-600">${stats.open_dsr_count}</p>
+                            </div>
+                             <div class="bg-white p-4 rounded-lg shadow text-center">
+                                <h4 class="text-lg font-semibold text-gray-500">My Revoked Consents</h4>
+                                <p class="text-4xl font-bold text-red-600">${revokedConsents}</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold mb-2">Quick Actions</h3>
+                            <div class="flex space-x-4">
+                                <button onclick="document.getElementById('link-dsr-requests').click()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit a New DSR Request</button>
+                                <button onclick="document.getElementById('link-my-consents').click()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Manage My Consents</button>
+                            </div>
+                        </div>
+                    `;
+                    mainContent.innerHTML = html;
+                } catch (e) {
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load your dashboard. ${e.message}</div>`;
+                }
+            };
+
+            const loadMyData = async () => {
+                pageTitle.textContent = 'My Personal Data';
+                headerActions.innerHTML = '';
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading your data...</div>`;
+                try {
+                    const response = await fetch('/api/my-data');
+                    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                    const inventory = await response.json();
+                    let html = `
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold mb-4">Personal Data We Process</h3>
+                            <p class="text-sm text-gray-600 mb-4">This table shows the categories of personal data related to you that are processed in our systems.</p>
+                            <table class="w-full text-left data-table">
+                                <thead><tr><th>Data Item</th><th>Category</th><th>Location</th><th>Purpose of Processing</th></tr></thead>
+                                <tbody>
+                                    ${inventory.map(item => `
+                                        <tr>
+                                            <td class="p-2 border-t">${item.data_item}</td>
+                                            <td class="p-2 border-t">${item.category}</td>
+                                            <td class="p-2 border-t">${item.location}</td>
+                                            <td class="p-2 border-t">${item.purpose}</td>
+                                        </tr>
+                                    `).join('')}
+                                    ${inventory.length === 0 ? '<tr><td colspan="4" class="p-4 text-center text-gray-500">No personal data found linked to your account.</td></tr>' : ''}
+                                </tbody>
+                            </table>
+                        </div>`;
+                    mainContent.innerHTML = html;
+                } catch (e) {
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load your data. ${e.message}</div>`;
+                }
+            };
+
+            const loadDashboard = async () => {
+                pageTitle.textContent = 'Main Dashboard';
+                headerActions.innerHTML = '';
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading dashboard...</div>`;
+                try {
+                    const response = await fetch('/api/dashboard-stats');
+                    if (!response.ok) throw new Error(`Failed to fetch dashboard stats: ${response.statusText}`);
+                    const stats = await response.json();
+
+                    const inventoryResponse = await fetch('/api/personal-data-inventory');
+                    if (!inventoryResponse.ok) throw new Error(`Failed to fetch data inventory: ${inventoryResponse.statusText}`);
+                    const inventory = await inventoryResponse.json();
+
+                    const checklistResponse = await fetch('/api/compliance-checklist');
+                    if (!checklistResponse.ok) throw new Error(`Failed to fetch compliance checklist: ${checklistResponse.statusText}`);
+                    const checklist = await checklistResponse.json();
+
+                    const activeConsents = stats.consents.Active || 0;
+                    const revokedConsents = stats.consents.Revoked || 0;
+
+                    let html = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                             <div class="bg-white p-4 rounded-lg shadow text-center">
+                                <h4 class="text-lg font-semibold text-gray-500">Active Consents</h4>
+                                <p class="text-4xl font-bold text-green-600">${activeConsents}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg shadow text-center">
+                                <h4 class="text-lg font-semibold text-gray-500">Processing Activities</h4>
+                                <p class="text-4xl font-bold text-blue-600">${stats.total_processing_activities}</p>
+                            </div>
+                             <div class="bg-white p-4 rounded-lg shadow text-center">
+                                <h4 class="text-lg font-semibold text-gray-500">Revoked Consents</h4>
+                                <p class="text-4xl font-bold text-red-600">${revokedConsents}</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-1 bg-white p-4 rounded-lg shadow">
+                                 <h3 class="text-lg font-semibold mb-4 text-center">Overall Compliance Score</h3>
+                                 <canvas id="compliance-chart"></canvas>
+                            </div>
+                            <div class="lg:col-span-2 bg-white p-4 rounded-lg shadow">
+                                <h3 class="text-lg font-semibold mb-4">Recent DSR Activity</h3>
+                                <ul>
+                                    ${stats.recent_dsr_requests.map(req => `
+                                        <li class="border-b py-2 last:border-b-0">
+                                            <div class="flex items-center justify-between">
+                                                <span class="font-semibold text-blue-600">${req.user_name}</span>
+                                                <span class="text-sm text-gray-500">${new Date(req.submitted_at).toLocaleString()}</span>
+                                            </div>
+                                            <p class="text-sm text-gray-600">
+                                                Submitted a <span class="font-medium">${req.request_type}</span> request.
+                                                <span class="italic">Status: ${req.status}</span>
+                                            </p>
+                                        </li>
+                                    `).join('')}
+                                    ${stats.recent_dsr_requests.length === 0 ? '<li class="text-center text-gray-500 py-4">No recent DSR activity.</li>' : ''}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white p-4 rounded-lg shadow">
+                                <h3 class="text-lg font-semibold mb-4">Personal Data Inventory</h3>
+                                <table class="w-full text-left data-table">
+                                    <thead><tr><th>Data Item</th><th>Category</th><th>Purpose</th></tr></thead>
+                                    <tbody>
+                                        ${inventory.map(item => `
+                                            <tr>
+                                                <td class="p-2 border-t">${item.data_item}</td>
+                                                <td class="p-2 border-t">${item.category}</td>
+                                                <td class="p-2 border-t">${item.purpose}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg shadow">
+                                <h3 class="text-lg font-semibold mb-4">Legal Compliance Checklist</h3>
+                                <ul>
+                                    ${checklist.map(item => `
+                                        <li class="border-b py-2">
+                                            <div class="flex items-center justify-between">
+                                                <span>${item.requirement}</span>
+                                                <span class="px-2 py-1 rounded-full text-xs font-semibold ${item.status === 'Completed' ? 'bg-green-100 text-green-800' : (item.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800')}">${item.status}</span>
+                                            </div>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    mainContent.innerHTML = html;
+
+                    // --- Render Chart ---
+                    const ctx = document.getElementById('compliance-chart').getContext('2d');
+                    const completedCount = checklist.filter(i => i.status === 'Completed').length;
+                    const inProgressCount = checklist.filter(i => i.status === 'In Progress').length;
+                    const otherCount = checklist.length - completedCount - inProgressCount;
+                    const overallScore = checklist.length > 0 ? (completedCount / checklist.length * 100).toFixed(1) : 0;
+
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Completed', 'In Progress', 'Other'],
+                            datasets: [{
+                                data: [completedCount, inProgressCount, otherCount],
+                                backgroundColor: ['#10B981', '#F59E0B', '#94A3B8'],
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            animation: {
+                                animateScale: true,
+                                animateRotate: true
+                            },
+                            plugins: {
+                                legend: { position: 'top' },
+                                title: { display: true, text: `Compliance Score: ${overallScore}%` }
+                            }
+                        }
+                    });
+                } catch (e) {
+                     mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load dashboard. ${e.message}</div>`;
+                }
+            };
+
+            const loadMyConsents = async (page = 1) => {
+                pageTitle.textContent = 'Consent Management';
+                headerActions.innerHTML = ``;
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading consent records...</div>`;
+
+                try {
+                    const response = await fetch(`/my-consents?page=${page}`);
+                    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                    const data = await response.json();
+                    const consents = data.consents;
+                    const pagination = data.pagination;
+                    const isDpoOrAdmin = ['DPO', 'Admin'].includes(userRole);
+
+                let html = `
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">${isDpoOrAdmin ? 'Global Consent Overview' : 'My Consents'}</h3>
+                        <p class="text-sm text-gray-600 mb-4">${!isDpoOrAdmin ? 'Use the toggles below to grant or revoke your consent for different data processing activities.' : ''}</p>
+                        <table class="w-full text-left data-table">
+                            <thead><tr>
+                                ${isDpoOrAdmin ? '<th class="p-2">User</th>' : ''}
+                                <th class="p-2">Touchpoint</th>
+                                <th class="p-2">Status</th>
+                                <th class="p-2">Timestamp (PHT)</th>
+                                <th class="p-2">Action</th>
+                            </tr></thead>
+                            <tbody>`;
+                consents.forEach(c => {
+                    html += `<tr>
+                        ${isDpoOrAdmin ? `<td class="p-2 border-t">${c.user_name}</td>` : ''}
+                        <td class="p-2 border-t">${c.touchpoint_name}</td>
+                        <td class="p-2 border-t"><span class="px-2 py-1 rounded-full text-xs font-semibold ${c.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${c.status}</span></td>
+                        <td class="p-2 border-t">${new Date(c.timestamp).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</td>
+                        <td class="p-2 border-t">
+                            ${isDpoOrAdmin ? '<span class="text-sm text-gray-500 italic">Read Only</span>' : `
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                  <input type="checkbox" value="" class="sr-only peer" onchange="updateConsent(${c.id}, this.checked ? 'Active' : 'Revoked')" ${c.status === 'Active' ? 'checked' : ''}>
+                                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            `}
+                        </td>
+                    </tr>`;
+                });
+                if (consents.length === 0) {
+                    html += `<tr><td colspan="${isDpoOrAdmin ? 5 : 4}" class="p-4 text-center text-gray-500">No consent records found.</td></tr>`;
+                }
+                html += '</tbody></table></div>';
+                // Pagination
+                if (pagination.total_pages > 1) {
+                    html += '<div class="mt-4 flex justify-center items-center space-x-2">';
+                    html += `<button onclick="loadMyConsents(${pagination.page - 1})" class="px-3 py-1 rounded ${pagination.page === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-300 hover:bg-gray-400'}" ${pagination.page === 1 ? 'disabled' : ''}>Previous</button>`;
+                    html += `<span class="text-sm text-gray-600">Page ${pagination.page} of ${pagination.total_pages}</span>`;
+                    html += `<button onclick="loadMyConsents(${pagination.page + 1})" class="px-3 py-1 rounded ${pagination.page === pagination.total_pages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-300 hover:bg-gray-400'}" ${pagination.page === pagination.total_pages ? 'disabled' : ''}>Next</button>`;
+                    html += '</div>';
+                }
+                mainContent.innerHTML = html;
+                } catch (e) {
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load consents. ${e.message}</div>`;
+                }
+            };
+
+            const loadProcessingRegistry = async (query = '') => {
+                pageTitle.textContent = 'Data Processing Registry';
+                headerActions.innerHTML = `
+                    <input type="search" id="registry-search" placeholder="Search registry..." class="border rounded px-2 py-1">
+                    <button id="add-registry-btn" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Add New</button>
+                    <a href="/export/excel" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Export CSV</a>
+                `;
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading processing registry...</div>`;
+
+                try {
+                    const response = await fetch(`/processing-registry?q=${query}`);
+                    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                    const items = await response.json();
+
+                    const formatCategories = (categories) => {
+                        if (!categories) return '';
+                        return categories.split('|').map(part => {
+                            const [type, data] = part.split(':');
+                            if (type.trim() === 'PII') {
+                                return `<span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${data.trim()}</span>`;
+                            } else if (type.trim() === 'Sensitive Personal Info') {
+                                return `<span class="inline-block bg-amber-100 text-amber-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${data.trim()}</span>`;
+                            }
+                            return part;
+                        }).join(' ');
+                    };
+
+                    let html = `
+                        <div class="bg-white p-4 rounded-lg shadow">
+                             <table class="w-full text-left data-table">
+                                <thead><tr>
+                                    <th class="p-2">System/Process</th><th class="p-2">Purpose</th><th class="p-2">Data Categories</th><th class="p-2">Owner</th><th class="p-2">Actions</th>
+                                </tr></thead>
+                                <tbody>`;
+                    items.forEach(item => {
+                        html += `<tr>
+                            <td class="p-2 border-t align-top">${item.system_name}</td>
+                            <td class="p-2 border-t align-top">${item.purpose}</td>
+                            <td class="p-2 border-t align-top">${formatCategories(item.data_categories)}</td>
+                            <td class="p-2 border-t align-top">${item.owner}</td>
+                            <td class="p-2 border-t align-top">
+                                <button data-action="edit-registry" data-item='${JSON.stringify(item)}' class="text-blue-600 hover:underline text-sm">Edit</button>
+                                <button data-action="delete-registry" data-id="${item.id}" class="text-red-600 hover:underline text-sm ml-2">Delete</button>
+                            </td>
+                        </tr>`;
+                    });
+                     if (items.length === 0) {
+                        html += `<tr><td colspan="5" class="p-4 text-center text-gray-500">No processing activities found.</td></tr>`;
+                    }
+                    html += '</tbody></table></div>';
+
+                    mainContent.innerHTML = html;
+
+                    document.getElementById('registry-search').addEventListener('search', (e) => loadProcessingRegistry(e.target.value));
+                    document.getElementById('add-registry-btn').addEventListener('click', () => openRegistryModal());
+                } catch (e) {
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load processing registry. ${e.message}</div>`;
+                }
+            };
+
+            const loadPrivacyNotices = async () => {
+                pageTitle.textContent = 'Privacy Notices';
+
+                if (userRole === 'User') {
+                    headerActions.innerHTML = '';
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading published privacy notices...</div>`;
+                     try {
+                        const response = await fetch('/api/public-privacy-notices');
+                        if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                        const notices = await response.json();
+                        let html = `<div class="space-y-4">`;
+                        notices.forEach(notice => {
+                            html += `
+                                <div class="bg-white p-4 rounded-lg shadow">
+                                    <h3 class="text-lg font-bold">${notice.title} <span class="text-base font-normal text-gray-500">(v${notice.version})</span></h3>
+                                    <p class="text-sm text-gray-500 mb-2">Published on: ${new Date(notice.published_at).toLocaleDateString()}</p>
+                                    <div class="prose max-w-none">${notice.content}</div>
+                                </div>
+                            `;
+                        });
+                        if (notices.length === 0) {
+                            html += `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">No published privacy notices are available at this time.</div>`;
+                        }
+                        html += '</div>';
+                        mainContent.innerHTML = html;
+                    } catch (e) {
+                         mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load privacy notices. ${e.message}</div>`;
+                    }
+                    return;
+                }
+
+                // DPO/Admin View
+                headerActions.innerHTML = `<button id="add-notice-btn" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Create New Notice</button>`;
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading privacy notices...</div>`;
+
+                try {
+                    const response = await fetch('/privacy-notices');
+                    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                    const notices = await response.json();
+
+                    let html = `
+                        <div class="bg-white p-4 rounded-lg shadow">
+                             <table class="w-full text-left data-table">
+                                <thead><tr>
+                                    <th class="p-2">Title</th><th class="p-2">Version</th><th class="p-2">Status</th><th class="p-2">Last Updated</th><th class="p-2">Actions</th>
+                                </tr></thead>
+                                <tbody>`;
+                    notices.forEach(notice => {
+                        html += `<tr class="border-t">
+                            <td class="p-2">${notice.title}</td>
+                            <td class="p-2">${notice.version}</td>
+                            <td class="p-2"><span class="px-2 py-1 rounded-full text-xs font-semibold ${notice.is_published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${notice.is_published ? 'Published' : 'Draft'}</span></td>
+                            <td class="p-2">${new Date(notice.updated_at).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</td>
+                            <td class="p-2">
+                                <button onclick='openNoticeModal(${JSON.stringify(notice)})' class="text-blue-600 hover:underline text-sm">Edit</button>
+                                <button onclick='publishNotice(${notice.id})' class="text-purple-600 hover:underline text-sm ml-2">${notice.is_published ? 'Unpublish' : 'Publish'}</button>
+                            </td>
+                        </tr>`;
+                    });
+                     if (notices.length === 0) {
+                        html += `<tr><td colspan="5" class="p-4 text-center text-gray-500">No privacy notices found.</td></tr>`;
+                    }
+                    html += '</tbody></table></div>';
+                    mainContent.innerHTML = html;
+
+                    document.getElementById('add-notice-btn').addEventListener('click', () => openNoticeModal());
+                } catch (e) {
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load privacy notices. ${e.message}</div>`;
+                }
+            };
+
+            const loadUserManagement = async () => {
+                pageTitle.textContent = 'User Management';
+                headerActions.innerHTML = `<button id="add-user-btn" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Add New User</button>`;
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading users...</div>`;
+
+                try {
+                    const response = await fetch('/admin/users/list');
+                    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                    const users = await response.json();
+
+                    let html = `
+                        <div class="bg-white p-4 rounded-lg shadow">
+                             <table class="w-full text-left data-table">
+                                <thead><tr>
+                                    <th class="p-2">Name</th><th class="p-2">Email</th><th class="p-2">Role</th><th class="p-2">Actions</th>
+                                </tr></thead>
+                                <tbody>`;
+                    users.forEach(user => {
+                        html += `<tr class="border-t">
+                            <td class="p-2">${user.name}</td>
+                            <td class="p-2">${user.email}</td>
+                            <td class="p-2">${user.role}</td>
+                            <td class="p-2">
+                                <button data-action="edit-user" data-user='${JSON.stringify(user)}' class="text-blue-600 hover:underline text-sm">Edit</button>
+                                <button data-action="delete-user" data-id="${user.id}" class="text-red-600 hover:underline text-sm ml-2">Delete</button>
+                            </td>
+                        </tr>`;
+                    });
+                     if (users.length === 0) {
+                        html += `<tr><td colspan="4" class="p-4 text-center text-gray-500">No users found.</td></tr>`;
+                    }
+                    html += '</tbody></table></div>';
+                    mainContent.innerHTML = html;
+
+                    document.getElementById('add-user-btn').addEventListener('click', () => openUserModal());
+                } catch (e) {
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load users. ${e.message}</div>`;
+                }
+            };
+
+            const loadProfile = async () => {
+                pageTitle.textContent = 'My Profile';
+                headerActions.innerHTML = '';
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading profile...</div>`;
+                try {
+                    const response = await fetch('/api/profile');
+                    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                    const profile = await response.json();
+
+                    let html = `
+                    <div class="bg-white p-6 rounded-lg shadow max-w-lg mx-auto">
+                        <h3 class="text-lg font-bold mb-4">Update Your Profile</h3>
+                        <form id="profile-form">
+                            <div class="mb-4">
+                                <label for="profile-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                                <input type="text" name="name" id="profile-name" value="${profile.name}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+                            <div class="mb-4">
+                                <label for="profile-email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                                <input type="email" name="email" id="profile-email" value="${profile.email}" disabled class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100">
+                            </div>
+                             <hr class="my-6">
+                             <h4 class="text-md font-semibold mb-2">Change Password</h4>
+                            <div class="mb-4">
+                                <label for="profile-new-password" class="block text-sm font-medium text-gray-700">New Password</label>
+                                <input type="password" name="new_password" id="profile-new-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+                            <div class="mb-4">
+                                <label for="profile-confirm-password" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                                <input type="password" name="confirm_password" id="profile-confirm-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+                            <div class="mt-6 flex justify-end">
+                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>`;
+                    mainContent.innerHTML = html;
+
+                    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.target);
+                        const response = await fetch('/api/profile/update', { method: 'POST', body: formData });
+                        const result = await response.json();
+                        if(result.success) {
+                            alert('Profile updated successfully!');
+                            userDisplay.textContent = `${formData.get('name')} (${userRole})`;
+                        } else {
+                            alert(`Error: ${result.error || 'An unknown error occurred.'}`);
+                        }
+                    });
+                } catch (e) {
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load profile. ${e.message}</div>`;
+                }
+            };
+
+            const loadReportingModule = () => {
+                pageTitle.textContent = 'Compliance Reporting';
+                headerActions.innerHTML = '';
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading reporting module...</div>`;
+                const html = `
+                    <div class="bg-white p-6 rounded-lg shadow max-w-lg mx-auto">
+                        <h3 class="text-lg font-bold mb-4">Generate Reports</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 border rounded-lg">
+                                <div>
+                                    <h4 class="font-semibold">Audit Log Report</h4>
+                                    <p class="text-sm text-gray-600">Export a complete history of all system actions.</p>
+                                </div>
+                                <a href="/export/pdf" target="_blank" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Export PDF</a>
+                            </div>
+                            <div class="flex items-center justify-between p-4 border rounded-lg">
+                                <div>
+                                    <h4 class="font-semibold">Data Processing Registry</h4>
+                                    <p class="text-sm text-gray-600">Export the full registry of data processing activities.</p>
+                                </div>
+                                <a href="/export/excel" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Export CSV</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                mainContent.innerHTML = html;
+            };
+
+            const loadAuditLogs = async (query = '', page = 1) => {
+                pageTitle.textContent = 'System Audit Logs';
+                 headerActions.innerHTML = `
+                    <input type="search" id="audit-search" value="${query}" placeholder="Search logs..." class="border rounded px-2 py-1">
+                `;
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading audit logs...</div>`;
+
+                try {
+                    const response = await fetch(`/audit-logs?q=${query}&page=${page}`);
+                    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                    const data = await response.json();
+                const logs = data.logs;
+                const pagination = data.pagination;
+
+                let html = `
+                    <div class="bg-white p-4 rounded-lg shadow">
+                         <table class="w-full text-left data-table">
+                            <thead><tr>
+                                <th class="p-2">Timestamp</th><th class="p-2">User</th><th class="p-2">Action</th><th class="p-2">IP Address</th><th class="p-2">Details</th>
+                            </tr></thead>
+                            <tbody>`;
+                logs.forEach(log => {
+                    html += `<tr>
+                        <td class="p-2 border-t">${new Date(log.timestamp).toLocaleString()}</td>
+                        <td class="p-2 border-t">${log.user_identity}</td>
+                        <td class="p-2 border-t">${log.action_type}</td>
+                        <td class="p-2 border-t">${log.source_ip}</td>
+                        <td class="p-2 border-t">${log.description || ''}</td>
+                    </tr>`;
+                });
+                 if (logs.length === 0) {
+                    html += `<tr><td colspan="5" class="p-4 text-center text-gray-500">No audit logs found.</td></tr>`;
+                }
+                html += '</tbody></table></div>';
+
+                if (pagination.total_pages > 1) {
+                    html += '<div class="mt-4 flex justify-center items-center space-x-2">';
+                    html += `<button onclick="loadAuditLogs('${query}', ${pagination.page - 1})"
+                        class="px-3 py-1 rounded ${pagination.page === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-300 hover:bg-gray-400'}"
+                        ${pagination.page === 1 ? 'disabled' : ''}>
+                        Previous
+                    </button>`;
+                    html += `<span class="text-sm text-gray-600">Page ${pagination.page} of ${pagination.total_pages}</span>`;
+                    html += `<button onclick="loadAuditLogs('${query}', ${pagination.page + 1})"
+                        class="px-3 py-1 rounded ${pagination.page === pagination.total_pages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-300 hover:bg-gray-400'}"
+                        ${pagination.page === pagination.total_pages ? 'disabled' : ''}>
+                        Next
+                    </button>`;
+                    html += '</div>';
+                }
+
+                mainContent.innerHTML = html;
+                document.getElementById('audit-search').addEventListener('search', (e) => loadAuditLogs(e.target.value, 1));
+                } catch (e) {
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load audit logs. ${e.message}</div>`;
+                }
+            };
+
+            const loadDsrRequests = async () => {
+                pageTitle.textContent = 'Data Subject Requests';
+                headerActions.innerHTML = '';
+
+                if (userRole === 'User') {
+                    // --- Regular User view: submission form + own requests ---
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading your DSR requests...</div>`;
+                    try {
+                        const response = await fetch('/api/dsr/my');
+                        if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                        const requests = await response.json();
+
+                        let html = `
+                            <div class="bg-white p-4 rounded-lg shadow mb-6">
+                                <h3 class="text-lg font-semibold mb-4">Submit a New Data Subject Request</h3>
+                                <form id="user-dsr-form" enctype="multipart/form-data">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="user-dsr-type" class="block text-sm font-medium text-gray-700">Request Type</label>
+                                            <select name="request_type" id="user-dsr-type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                                <option value="Access">Right to Access</option>
+                                                <option value="Rectification">Right to Rectification</option>
+                                                <option value="Erasure">Right to Erasure</option>
+                                                <option value="Restriction">Right to Restriction</option>
+                                                <option value="Portability">Right to Portability</option>
+                                                <option value="Objection">Right to Objection</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="user-dsr-proof" class="block text-sm font-medium text-gray-700">Proof of Identity / Authorization (optional)</label>
+                                            <input type="file" name="proof" id="user-dsr-proof" accept=".pdf,.png,.jpg,.jpeg,.webp" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                            <p class="text-xs text-gray-500 mt-1">Accepted: PDF, PNG, JPG, WEBP. Max 5 MB.</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <label for="user-dsr-notes" class="block text-sm font-medium text-gray-700">Notes (optional)</label>
+                                        <textarea name="notes" id="user-dsr-notes" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                                    </div>
+                                    <div class="mt-4 flex justify-end">
+                                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Submit Request</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="bg-white p-4 rounded-lg shadow">
+                                <h3 class="text-lg font-semibold mb-4">My DSR Requests</h3>
+                                <table class="w-full text-left data-table">
+                                    <thead><tr>
+                                        <th class="p-2">Request Type</th>
+                                        <th class="p-2">Status</th>
+                                        <th class="p-2">Submitted At</th>
+                                        <th class="p-2">Proof</th>
+                                        <th class="p-2">Resolution Notes</th>
+                                    </tr></thead>
+                                    <tbody>`;
+                        requests.forEach(req => {
+                            const statusClass = req.status === 'Pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : (req.status === 'Completed' || req.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800');
+                            html += `<tr>
+                                <td class="p-2 border-t">${req.request_type}</td>
+                                <td class="p-2 border-t"><span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">${req.status}</span></td>
+                                <td class="p-2 border-t">${new Date(req.submitted_at).toLocaleString()}</td>
+                                <td class="p-2 border-t">${req.has_proof ? '<span class="text-green-600 font-semibold">Yes</span>' : '<span class="text-gray-400">No</span>'}</td>
+                                <td class="p-2 border-t">${req.resolution_notes || '-'}</td>
+                            </tr>`;
+                        });
+                        if (requests.length === 0) {
+                            html += `<tr><td colspan="5" class="p-4 text-center text-gray-500">You have not submitted any DSR requests yet.</td></tr>`;
+                        }
+                        html += '</tbody></table></div>';
+                        mainContent.innerHTML = html;
+
+                        // Bind the submission form
+                        document.getElementById('user-dsr-form').addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.target);
+                            const submitResponse = await fetch('/api/dsr/submit', { method: 'POST', body: formData });
+                            const result = await submitResponse.json();
+                            if (result.success) {
+                                alert('DSR request submitted successfully!');
+                                loadDsrRequests();
+                            } else {
+                                alert(`Error: ${result.error || 'An unknown error occurred.'}`);
+                            }
+                        });
+                    } catch (e) {
+                        mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load DSR requests. ${e.message}</div>`;
+                    }
+                    return;
+                }
+
+                // --- DPO/Admin view: all DSR requests ---
+                mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading DSR requests...</div>`;
+                try {
+                    const response = await fetch('/dsr-requests');
+                    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                    const requests = await response.json();
+                let html = `
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">DSR Requests</h3>
+                        <table class="w-full text-left data-table">
+                            <thead><tr>
+                                <th class="p-2">User</th>
+                                <th class="p-2">Request Type</th>
+                                <th class="p-2">Status</th>
+                                <th class="p-2">Submitted At</th>
+                                <th class="p-2">Actions</th>
+                            </tr></thead>
+                            <tbody>`;
+                requests.forEach(req => {
+                    html += `<tr>
+                        <td class="p-2 border-t">${req.user_name}</td>
+                        <td class="p-2 border-t">${req.request_type}</td>
+                        <td class="p-2 border-t">${req.status}</td>
+                        <td class="p-2 border-t">${new Date(req.submitted_at).toLocaleString()}</td>
+                        <td class="p-2 border-t">
+                            <button onclick='openDsrModal(${JSON.stringify(req)})' class="text-blue-600 hover:underline text-sm">View Details</button>
+                        </td>
+                    </tr>`;
+                });
+                if (requests.length === 0) {
+                    html += `<tr><td colspan="5" class="p-4 text-center text-gray-500">No DSR requests found.</td></tr>`;
+                }
+                html += '</tbody></table></div>';
+                mainContent.innerHTML = html;
+                } catch (e) {
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load DSR requests. ${e.message}</div>`;
+                }
+            };
+
+            window.openDsrModal = (request) => {
+                const modal = document.getElementById('dsr-modal');
+                const modalContent = document.getElementById('dsr-modal-content');
+                modalContent.innerHTML = `
+                    <p><strong>User:</strong> ${request.user_name}</p>
+                    <p><strong>Request Type:</strong> ${request.request_type}</p>
+                    <p><strong>Status:</strong> ${request.status}</p>
+                    <p><strong>Submitted At:</strong> ${new Date(request.submitted_at).toLocaleString()}</p>
+                    <form id="dsr-update-form" class="mt-4">
+                        <input type="hidden" name="request_id" value="${request.id}">
+                        <div class="mb-4">
+                            <label for="dsr-status" class="block text-sm font-medium text-gray-700">Update Status</label>
+                            <select name="status" id="dsr-status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="Pending" ${request.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                <option value="Under Review" ${request.status === 'Under Review' ? 'selected' : ''}>Under Review</option>
+                                <option value="Approved" ${request.status === 'Approved' ? 'selected' : ''}>Approved</option>
+                                <option value="Denied" ${request.status === 'Denied' ? 'selected' : ''}>Denied</option>
+                                <option value="Completed" ${request.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="dsr-notes" class="block text-sm font-medium text-gray-700">Resolution Notes</label>
+                            <textarea name="resolution_notes" id="dsr-notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                        </div>
+                        <div class="mt-4 flex justify-end">
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
+                        </div>
+                    </form>
+                `;
+                modal.classList.remove('hidden');
+
+                document.getElementById('dsr-update-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    const requestId = formData.get('request_id');
+                    const response = await fetch(`/dsr-requests/update/${requestId}`, { method: 'POST', body: formData });
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('DSR request updated successfully!');
+                        modal.classList.add('hidden');
+                        loadDsrRequests();
+                    } else {
+                        alert(`Error: ${result.error || 'An unknown error occurred.'}`);
+                    }
+                });
+
+                document.getElementById('cancel-dsr-btn').addEventListener('click', () => modal.classList.add('hidden'));
+            };
+
+            // --- User Management Modal and Form Logic ---
+            const userModal = document.getElementById('user-modal');
+            const userForm = document.getElementById('user-form');
+            const userModalTitle = document.getElementById('user-modal-title');
+            const userIdInput = document.getElementById('user-id');
+            const userNameInput = document.getElementById('user-name');
+            const userEmailInput = document.getElementById('user-email');
+            const userPasswordInput = document.getElementById('user-password');
+            const userRoleInput = document.getElementById('user-role');
+            const passwordHelpText = document.getElementById('password-help');
+
+            const openUserModal = (user = null) => {
+                userForm.reset();
+                if (user) {
+                    userModalTitle.textContent = 'Edit User';
+                    userIdInput.value = user.id;
+                    userNameInput.value = user.name;
+                    userEmailInput.value = user.email;
+                    userEmailInput.disabled = true;
+                    userRoleInput.value = user.role;
+                    userPasswordInput.required = false;
+                    passwordHelpText.classList.remove('hidden');
+                } else {
+                    userModalTitle.textContent = 'Add New User';
+                    userIdInput.value = '';
+                    userEmailInput.disabled = false;
+                    userPasswordInput.required = true;
+                    passwordHelpText.classList.add('hidden');
+                }
+                userModal.classList.remove('hidden');
+            };
+
+            document.getElementById('cancel-user-btn').addEventListener('click', () => {
+                userModal.classList.add('hidden');
+            });
+
+            userForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const id = formData.get('id');
+                const url = id ? `/admin/users/update/${id}` : '/admin/users/add';
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    userModal.classList.add('hidden');
+                    loadUserManagement();
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            });
+
+
+            // --- Action Handlers ---
+            window.openNoticeModal = (notice = null) => {
+                noticeModal.classList.remove('hidden');
+                noticeForm.reset();
+
+                if (quill) {
+                    quill = null;
+                }
+                const editorDiv = document.getElementById('editor');
+                editorDiv.innerHTML = '';
+
+                quill = new Quill('#editor', {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'link'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            ['clean']
+                        ]
+                    }
+                });
+
+                if (notice) {
+                    noticeModalTitle.textContent = 'Edit Privacy Notice';
+                    document.getElementById('notice-id').value = notice.id;
+                    document.getElementById('notice-title').value = notice.title;
+                    document.getElementById('notice-version').value = notice.version;
+                    quill.clipboard.dangerouslyPasteHTML(notice.content);
+                } else {
+                    noticeModalTitle.textContent = 'Create New Privacy Notice';
+                    document.getElementById('notice-id').value = '';
+                }
+            };
+
+            window.publishNotice = async (noticeId) => {
+                if (confirm('Are you sure you want to change the publication status?')) {
+                    await fetch(`/privacy-notices/publish/${noticeId}`, { method: 'POST' });
+                    loadPrivacyNotices();
+                }
+            };
+
+            window.updateConsent = async (consentId, status) => {
+                if(confirm(`Are you sure you want to change the status to ${status}?`)) {
+                    const formData = new FormData();
+                    formData.append('status', status);
+                    const response = await fetch(`/consents/update/${consentId}`, { method: 'POST', body: formData });
+                    const result = await response.json();
+                    if (!result.success) {
+                        alert(`Error: ${result.error}`);
+                        loadMyConsents();
+                    } else {
+                        alert('Consent status updated.');
+                        loadMyConsents();
+                    }
+                } else {
+                    loadMyConsents();
+                }
+            };
+
+            // --- Navigation Logic ---
+            document.getElementById('link-dashboard').addEventListener('click', (e) => { e.preventDefault(); loadDashboard(); });
+            document.getElementById('link-user-dashboard').addEventListener('click', (e) => { e.preventDefault(); loadUserDashboard(); });
+            document.getElementById('link-my-data').addEventListener('click', (e) => { e.preventDefault(); loadMyData(); });
+            document.getElementById('link-my-consents').addEventListener('click', (e) => { e.preventDefault(); loadMyConsents(); });
+            document.getElementById('link-user-profile').addEventListener('click', (e) => { e.preventDefault(); loadProfile(); });
+            document.getElementById('link-processing-registry').addEventListener('click', (e) => { e.preventDefault(); loadProcessingRegistry(); });
+            document.getElementById('link-privacy-notices').addEventListener('click', (e) => { e.preventDefault(); loadPrivacyNotices(); });
+            document.getElementById('link-reporting-module').addEventListener('click', (e) => { e.preventDefault(); loadReportingModule(); });
+            document.getElementById('link-audit-logs').addEventListener('click', (e) => { e.preventDefault(); loadAuditLogs(); });
+            document.getElementById('link-dsr-requests').addEventListener('click', (e) => { e.preventDefault(); loadDsrRequests(); });
+            document.getElementById('link-user-management').addEventListener('click', (e) => { e.preventDefault(); loadUserManagement(); });
+
+            // Load default view
+            if (['DPO', 'Admin'].includes(userRole)) {
+                loadDashboard();
+            } else {
+                loadUserDashboard();
+            }
+        });
+    </script>
+</body>
+</html>
