@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Access Denied{% endblock %}
+{% block page_title %}Access Denied{% endblock %}
+{% block page_subtitle %}Role-based access control violation{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-16 bg-white border border-red-200 rounded-2xl p-10 text-center">
+  <div class="w-16 h-16 mx-auto rounded-full bg-red-50 flex items-center justify-center text-3xl mb-5">🚫</div>
+  <h2 class="text-lg font-semibold text-slate-900 mb-2">403 — Insufficient Privileges</h2>
+  <p class="text-sm text-slate-500 leading-relaxed">
+    Your role (<span class="font-medium text-slate-700">{{ role_label }}</span>) does not permit
+    access to this module. This access attempt has been recorded in the system audit trail
+    in accordance with the organization's security policy.
+  </p>
+  <a href="{{ url_for('dashboard') }}"
+     class="inline-block mt-6 px-6 py-2.5 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">
+    Return to Dashboard
+  </a>
+</div>
+{% endblock %}

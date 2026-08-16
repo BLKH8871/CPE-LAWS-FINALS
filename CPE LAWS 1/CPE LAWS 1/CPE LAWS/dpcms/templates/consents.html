@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Consents{% endblock %}
+{% block page_title %}{{ 'My Consents' if current_role == 'User' else 'Consent Management' }}{% endblock %}
+{% block page_subtitle %}Consent lifecycle tracking per data-collection touchpoint{% endblock %}
+
+{% block content %}
+
+<!-- Search / filter bar -->
+<form method="GET" class="flex items-center gap-3 mb-6">
+  <input type="text" name="q" value="{{ q }}" id="consent-search"
+         placeholder="Search touchpoint{{ '' if current_role == 'User' else ' or data subject' }}…"
+         class="w-80 px-4 py-2.5 rounded-lg border border-slate-300 text-sm bg-white
+                focus:outline-none focus:ring-2 focus:ring-blue-300">
+  <select name="status"
+          class="px-4 py-2.5 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none">
+    <option value="">All statuses</option>
+    {% for s in ['Active', 'Pending', 'Revoked'] %}
+      <option value="{{ s }}" {{ 'selected' if status == s }}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <button class="px-5 py-2.5 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700">Filter</button>
+  {% if q or status %}
+    <a href="{{ url_for('consents') }}" class="text-sm text-slate-500 hover:underline">Clear</a>
+  {% endif %}
+
+  <span class="flex-1"></span>
+
+  <!-- New consent request -->
+  <button type="button" onclick="document.getElementById('new-consent').classList.toggle('hidden')"
+          class="px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">
+    + New Consent Request
+  </button>
+</form>
+
+<div id="new-consent" class="hidden mb-6 bg-white border border-slate-200 rounded-xl p-5">
+  <form method="POST" action="{{ url_for('consent_create') }}" class="flex items-end gap-3">
+    <div class="flex-1">
+      <label class="block text-xs font-medium text-slate-600 mb-1">Touchpoint name</label>
+      <input type="text" name="touchpoint_name" required
+             placeholder="e.g., Marketing Email Subscription"
+             class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+    </div>
+    <button class="px-5 py-2.5 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700">Submit</button>
+  </form>
+  <p class="text-[11px] text-slate-400 mt-2">New requests enter <b>Pending</b> status until validated by the Data Protection Officer.</p>
+</div>
+
+<!-- High-density consent table -->
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+  <table class="w-full text-sm" id="consent-table">
+    <thead>
+      <tr class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 border-b border-slate-200">
+        <th class="px-5 py-3 w-14">ID</th>
+        {% if current_role != 'User' %}<th class="px-5 py-3">Data Subject</th>{% endif %}
+        <th class="px-5 py-3">Touchpoint</th>
+        <th class="px-5 py-3 w-32">Status</th>
+        <th class="px-5 py-3 w-44">Last Updated</th>
+        <th class="px-5 py-3 w-56">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for c in consents %}
+      <tr class="hover:bg-slate-50/60">
+        <td class="px-5 py-3 text-slate-400 font-mono">{{ c.id }}</td>
+        {% if current_role != 'User' %}
+        <td class="px-5 py-3">
+          <p class="text-slate-800">{{ c.owner_name }}</p>
+          <p class="text-[11px] text-slate-400">{{ c.owner_email }}</p>
+        </td>
+        {% endif %}
+        <td class="px-5 py-3 text-slate-700">{{ c.touchpoint_name }}</td>
+        <td class="px-5 py-3">
+          <span class="text-[11px] px-2.5 py-1 rounded-full font-medium
+            {{ 'bg-emerald-100 text-emerald-700' if c.status == 'Active'
+               else 'bg-amber-100 text-amber-700' if c.status == 'Pending'
+               else 'bg-red-100 text-red-700' }}">{{ c.status }}</span>
+        </td>
+        <td class="px-5 py-3 text-slate-500 text-xs">{{ c.timestamp }}</td>
+        <td class="px-5 py-3">
+          <div class="flex gap-2">
+            {% if current_role in ['Admin', 'DPO'] and c.status != 'Active' %}
+            <form method="POST" action="{{ url_for('consent_update', cid=c.id) }}">
+              <input type="hidden" name="status" value="Active">
+              <button class="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100">Approve</button>
+            </form>
+            {% endif %}
+            {% if c.status != 'Revoked' and (current_role in ['Admin', 'DPO'] or c.user_id == session['user_id']) %}
+            <form method="POST" action="{{ url_for('consent_update', cid=c.id) }}"
+                  onsubmit="return confirm('Revoke this consent? Processing under it must cease.');">
+              <input type="hidden" name="status" value="Revoked">
+              <button class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100">Revoke</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="px-5 py-10 text-center text-slate-400">No consent records match your filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="text-xs text-slate-400 mt-3">{{ consents|length }} record(s). Every status change is written to the immutable audit trail.</p>
+{% endblock %}
