@@ -39,6 +39,7 @@ CREATE TABLE dsr_requests (
     user_id INTEGER NOT NULL,
     request_type TEXT NOT NULL CHECK(request_type IN ('Access', 'Rectification', 'Erasure', 'Restriction', 'Portability', 'Objection')),
     description TEXT NOT NULL,
+    proof_document TEXT,
     status TEXT NOT NULL CHECK(status IN ('Pending', 'Under Review', 'Approved', 'Denied', 'Completed')) DEFAULT 'Pending',
     submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     resolved_at DATETIME,

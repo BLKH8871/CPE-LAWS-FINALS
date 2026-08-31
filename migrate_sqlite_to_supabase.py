@@ -69,9 +69,11 @@ def main():
     with sqlite3.connect(SQLITE_DATABASE) as source, connect(normalize_database_url(database_url)) as target:
         source.row_factory = sqlite3.Row
         create_schema(target)
+        target.commit()  # Persist non-destructive schema upgrades before data checks.
         if target_contains_data(target):
             if not args.replace:
-                raise SystemExit("Supabase already contains data. It was not changed. Re-run with --replace only if you intend to overwrite it.")
+                print("Supabase schema is up to date. Existing data was not changed.")
+                return
             with target.cursor() as cursor:
                 cursor.execute("TRUNCATE TABLE compliance_checklist, personal_data_inventory, privacy_notices, processing_registry, audit_logs, incidents, dsr_requests, consents, users RESTART IDENTITY CASCADE")
         for table in TABLES:
