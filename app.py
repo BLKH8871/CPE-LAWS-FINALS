@@ -11,12 +11,14 @@ from io import StringIO
 import os
 from dotenv import load_dotenv
 import re
+from postgres_compat import PostgreSQLConnection
 
 load_dotenv() # Load environment variables from .env file
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_default_fallback_key_in_case_env_is_missing')
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'compliance_system.db')
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # --- DSR Proof Upload Configuration ---
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'uploads')
@@ -35,8 +37,11 @@ except OSError:
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row
+        if DATABASE_URL:
+            db = g._database = PostgreSQLConnection(DATABASE_URL)
+        else:
+            db = g._database = sqlite3.connect(DATABASE)
+            db.row_factory = sqlite3.Row
     return db
 
 @app.teardown_appcontext
