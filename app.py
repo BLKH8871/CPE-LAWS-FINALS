@@ -664,7 +664,7 @@ def user_dashboard():
     db = get_db()
     user_id = session['user_id']
     consents = db.execute('SELECT status, COUNT(id) as count FROM consents WHERE user_id = ? GROUP BY status', (user_id,)).fetchall()
-    open_dsr_count = db.execute('SELECT COUNT(id) FROM dsr_requests WHERE user_id = ? AND status = "Pending"', (user_id,)).fetchone()[0]
+    open_dsr_count = db.execute("SELECT COUNT(id) FROM dsr_requests WHERE user_id = ? AND status = 'Pending'", (user_id,)).fetchone()[0]
     recent_dsr_requests = db.execute('''
         SELECT id, request_type, status, submitted_at FROM dsr_requests
         WHERE user_id = ? ORDER BY submitted_at DESC LIMIT 3
