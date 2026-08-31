@@ -51,12 +51,16 @@ def close_connection(exception):
         db.close()
 
 def _serialize_row(row):
-    """Helper to convert a sqlite3.Row object to a dict, formatting dates."""
-    d = dict(row)
-    for key, value in d.items():
+    """Convert database rows to JSON-safe values with ISO 8601 UTC timestamps."""
+    data = dict(row)
+    for key, value in data.items():
         if isinstance(value, datetime.datetime):
-            d[key] = value.isoformat() + "Z" # Add Z for UTC
-    return d
+            if value.tzinfo is None:
+                value = value.replace(tzinfo=datetime.timezone.utc)
+            data[key] = value.astimezone(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+        elif isinstance(value, datetime.date):
+            data[key] = value.isoformat()
+    return data
 
 # --- Audit Logging ---
 @app.after_request
@@ -273,7 +277,7 @@ def dashboard_stats():
 def get_compliance_checklist():
     db = get_db()
     checklist = db.execute('SELECT * FROM compliance_checklist').fetchall()
-    return jsonify([dict(row) for row in checklist])
+    return jsonify([_serialize_row(row) for row in checklist])
 
 @app.route('/api/personal-data-inventory')
 @login_required
@@ -281,7 +285,7 @@ def get_compliance_checklist():
 def get_personal_data_inventory():
     db = get_db()
     inventory = db.execute('SELECT * FROM personal_data_inventory').fetchall()
-    return jsonify([dict(row) for row in inventory])
+    return jsonify([_serialize_row(row) for row in inventory])
 
 # --- User Profile Management ---
 @app.route('/api/profile', methods=['GET'])
@@ -328,7 +332,7 @@ def processing_registry():
                            (search_term, search_term, search_term)).fetchall()
     else:
         items = db.execute('SELECT * FROM processing_registry').fetchall()
-    return jsonify([dict(row) for row in items])
+    return jsonify([_serialize_row(row) for row in items])
 
 @app.route('/processing-registry/add', methods=['POST'])
 @login_required
@@ -500,7 +504,7 @@ def audit_logs():
 def list_dpo_admin_users():
     db = get_db()
     users = db.execute("SELECT id, name, role FROM users WHERE role IN ('DPO', 'Admin')").fetchall()
-    return jsonify([dict(row) for row in users])
+    return jsonify([_serialize_row(row) for row in users])
 
 # --- Admin User Management ---
 VALID_ROLES = ['User', 'DPO', 'Admin']
@@ -512,7 +516,7 @@ MIN_PASSWORD_LENGTH = 8
 def admin_users_list():
     db = get_db()
     users = db.execute('SELECT id, name, email, role FROM users ORDER BY id').fetchall()
-    return jsonify([dict(row) for row in users])
+    return jsonify([_serialize_row(row) for row in users])
 
 @app.route('/admin/users/add', methods=['POST'])
 @login_required
@@ -590,7 +594,7 @@ def admin_users_delete(user_id):
 def get_privacy_notices():
     db = get_db()
     notices = db.execute('SELECT * FROM privacy_notices ORDER BY updated_at DESC').fetchall()
-    return jsonify([dict(row) for row in notices])
+    return jsonify([_serialize_row(row) for row in notices])
 
 @app.route('/privacy-notices/add', methods=['POST'])
 @login_required
@@ -681,7 +685,7 @@ def my_data():
     db = get_db()
     user_id = session['user_id']
     inventory = db.execute('SELECT * FROM personal_data_inventory WHERE user_id = ?', (user_id,)).fetchall()
-    return jsonify([dict(row) for row in inventory])
+    return jsonify([_serialize_row(row) for row in inventory])
 
 @app.route('/api/dsr/my')
 @login_required
@@ -734,7 +738,7 @@ def submit_dsr():
 def public_privacy_notices():
     db = get_db()
     notices = db.execute('SELECT title, version, content, published_at FROM privacy_notices WHERE is_published = TRUE ORDER BY published_at DESC').fetchall()
-    return jsonify([dict(row) for row in notices])
+    return jsonify([_serialize_row(row) for row in notices])
 
 # --- Export Endpoints ---
 @app.route('/export/pdf')
