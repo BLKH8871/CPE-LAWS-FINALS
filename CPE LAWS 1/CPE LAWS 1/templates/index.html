@@ -38,7 +38,7 @@
                 <li class="nav-link hidden" id="link-my-consents"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">Consent Management</a></li>
                 <li class="nav-link hidden" id="link-processing-registry"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">Data Processing Registry</a></li>
                 <li class="nav-link hidden" id="link-privacy-notices"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">Privacy Notices</a></li>
-                <li class="nav-link hidden" id="link-dsr-requests"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">DSR Requests</a></li>
+                <li class="nav-link hidden" id="link-dsr-requests"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">DSR</a></li>
                 <li class="nav-link hidden" id="link-reporting-module"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">Reporting</a></li>
                 <li class="nav-link hidden" id="link-user-management"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">User Management</a></li>
                 <li class="nav-link hidden" id="link-audit-logs"><a href="#" class="block py-2 px-3 rounded hover:bg-slate-700">System Audit Logs</a></li>
@@ -53,7 +53,7 @@
 
     <div id="dsr-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden modal z-50">
         <div class="bg-white p-6 rounded-lg shadow-xl w-1/2">
-            <h3 id="dsr-modal-title" class="text-lg font-bold mb-4">DSR Request Details</h3>
+            <h3 id="dsr-modal-title" class="text-lg font-bold mb-4">DSR Details</h3>
             <div id="dsr-modal-content"></div>
             <div class="mt-4 flex justify-end">
                 <button type="button" id="cancel-dsr-btn" class="mr-2 text-gray-600">Close</button>
@@ -307,7 +307,7 @@
                                 <p class="text-4xl font-bold text-green-600">${activeConsents}</p>
                             </div>
                             <div class="bg-white p-4 rounded-lg shadow text-center">
-                                <h4 class="text-lg font-semibold text-gray-500">Open DSR Requests</h4>
+                                <h4 class="text-lg font-semibold text-gray-500">Open DSR</h4>
                                 <p class="text-4xl font-bold text-blue-600">${stats.open_dsr_count}</p>
                             </div>
                              <div class="bg-white p-4 rounded-lg shadow text-center">
@@ -980,7 +980,7 @@
 
                 if (userRole === 'User') {
                     // --- Regular User view: submission form + own requests ---
-                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading your DSR requests...</div>`;
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading your DSR...</div>`;
                     try {
                         const response = await fetch('/api/dsr/my');
                         if (!response.ok) throw new Error(`Server returned ${response.status}`);
@@ -988,7 +988,7 @@
 
                         let html = `
                             <div class="bg-white p-4 rounded-lg shadow mb-6">
-                                <h3 class="text-lg font-semibold mb-4">Submit a New Data Subject Request</h3>
+                                <h3 class="text-lg font-semibold mb-4">Submit a New DSR</h3>
                                 <form id="user-dsr-form" enctype="multipart/form-data">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
@@ -1019,7 +1019,7 @@
                             </div>
 
                             <div class="bg-white p-4 rounded-lg shadow">
-                                <h3 class="text-lg font-semibold mb-4">My DSR Requests</h3>
+                                <h3 class="text-lg font-semibold mb-4">My DSR</h3>
                                 <table class="w-full text-left data-table">
                                     <thead><tr>
                                         <th class="p-2">Request Type</th>
@@ -1044,7 +1044,7 @@
                             </tr>`;
                         });
                         if (requests.length === 0) {
-                            html += `<tr><td colspan="5" class="p-4 text-center text-gray-500">You have not submitted any DSR requests yet.</td></tr>`;
+                            html += `<tr><td colspan="5" class="p-4 text-center text-gray-500">You have not submitted any DSR yet.</td></tr>`;
                         }
                         html += '</tbody></table></div>';
                         mainContent.innerHTML = html;
@@ -1063,12 +1063,12 @@
                             }
                         });
                     } catch (e) {
-                        mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load DSR requests. ${e.message}</div>`;
+                        mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load DSR. ${e.message}</div>`;
                     }
                     return;
                 }
 
-                // --- DPO/Admin view: all DSR requests ---
+                // --- DPO/Admin view: all DSR ---
                 mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-gray-500">Loading DSR requests...</div>`;
                 try {
                     const response = await fetch('/dsr-requests');
@@ -1103,7 +1103,7 @@
                 html += '</tbody></table></div>';
                 mainContent.innerHTML = html;
                 } catch (e) {
-                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load DSR requests. ${e.message}</div>`;
+                    mainContent.innerHTML = `<div class="bg-white p-6 rounded-lg shadow text-center text-red-600 font-semibold">Failed to load DSR. ${e.message}</div>`;
                 }
             };
 

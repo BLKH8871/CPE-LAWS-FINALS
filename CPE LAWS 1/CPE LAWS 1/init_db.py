@@ -190,7 +190,7 @@ def initialize_database():
             cursor.execute("INSERT INTO consents (user_id, touchpoint_name, status) VALUES (?, ?, ?)",
                            (user_id, 'Marketing SMS', 'Revoked'))
 
-            # Mock DSR Requests (one per user so pages have content)
+            # Mock DSR (one per user so pages have content)
             cursor.execute("INSERT INTO dsr_requests (user_id, request_type, status) VALUES (?, ?, ?)",
                            (admin_id, 'Data Portability', 'Pending'))
             cursor.execute("INSERT INTO dsr_requests (user_id, request_type, status) VALUES (?, ?, ?)",

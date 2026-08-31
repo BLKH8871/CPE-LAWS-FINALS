@@ -139,8 +139,8 @@ test_venv\Scripts\python -m flask run --debug
    ```
    Dashboard showing:
    - Personal consent statistics
-   - Open DSR request count
-   - Recent DSR request history
+   - Open DSR count
+   - Recent DSR history
    ```
 
 3. **My Consents Section**
@@ -148,7 +148,7 @@ test_venv\Scripts\python -m flask run --debug
    - Toggle consent status (Active/Revoked)
    - See consent history with timestamps
 
-4. **Submit DSR Request**
+4. **Submit DSR**
    - Navigate to DSR submission form
    - Select request type (Access, Rectification, Erasure, etc.)
    - Add request description
@@ -262,7 +262,7 @@ db.execute(query, (email,))
 3. **Update Status:** Toggle between Active and Revoked
 4. **Audit Trail:** All changes logged in audit_logs table
 
-#### Feature 2: DSR Request Workflow
+#### Feature 2: DSR Workflow
 
 1. **Submit:** `/api/dsr/submit` (API) or submit form (UI)
 2. **Track:** `/api/dsr/my` (user) or `/dsr-requests` (DPO)

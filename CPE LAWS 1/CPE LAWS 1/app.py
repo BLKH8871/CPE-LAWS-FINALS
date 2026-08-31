@@ -618,7 +618,7 @@ def publish_privacy_notice(notice_id):
         db.commit()
     return jsonify({"success": True})
 
-# --- DSR Request Management ---
+# --- DSR Management ---
 @app.route('/dsr-requests')
 @login_required
 @check_access('DPO')

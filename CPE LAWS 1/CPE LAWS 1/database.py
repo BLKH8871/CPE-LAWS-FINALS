@@ -104,14 +104,14 @@ def initialize_database():
     cursor.executemany('INSERT INTO privacy_notices (title, version, content, is_published, published_at) VALUES (?, ?, ?, ?, ?)', privacy_notices_to_add)
     print(f"{len(privacy_notices_to_add)} privacy notices added.")
 
-    # 5. DSR Requests
+    # 5. DSR
     user_id_john = 3
     dsr_requests_to_add = [
         (user_id_john, 'Access', 'Please provide a copy of all personal data you hold about me.', 'Pending', None, None),
         (user_id_john, 'Erasure', 'I request the deletion of my account and all associated data.', 'Under Review', None, 'Investigating data retention obligations under RA 10173.')
     ]
     cursor.executemany('INSERT INTO dsr_requests (user_id, request_type, description, status, resolved_at, resolution_notes) VALUES (?, ?, ?, ?, ?, ?)', dsr_requests_to_add)
-    print(f"{len(dsr_requests_to_add)} DSR requests added.")
+    print(f"{len(dsr_requests_to_add)} DSR added.")
 
     # 6. Incidents (REMOVED)
 

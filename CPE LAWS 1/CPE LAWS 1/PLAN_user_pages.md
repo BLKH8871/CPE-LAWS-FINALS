@@ -4,7 +4,7 @@
 Give the **User** role a proper set of pages, matching the existing sidebar/Tailwind design:
 1. **User Dashboard** — landing page after login.
 2. **My Data** — shows personal data linked to the logged-in user.
-3. **Submit DSR Requests** — submit one of the standard 6 rights (with optional proof-of-identity upload), view own requests + status.
+3. **Submit DSR** — submit one of the standard 6 rights (with optional proof-of-identity upload), view own DSR + status.
 4. **Privacy Notices** — read published notices.
 5. **Consent Management** — consumer-friendly opt-in/opt-out toggles.
 6. **My Profile** — exists; keep as-is.

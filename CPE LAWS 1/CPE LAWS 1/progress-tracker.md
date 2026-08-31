@@ -15,7 +15,7 @@
 *   **Consent Management** — list and update consent status both work.
 *   **Processing Registry** — add, update, delete, and search all work.
 *   **Privacy Notices** — add, update, and publish/unpublish all work.
-*   **DSR Requests** — list and update status both work.
+*   **DSR** — list and update status both work.
 *   **Audit Logs** — list, search, and pagination work; actions are logged.
 *   **Profile** — GET and update name/password work.
 *   **Exports** — PDF and CSV exports both return 200.

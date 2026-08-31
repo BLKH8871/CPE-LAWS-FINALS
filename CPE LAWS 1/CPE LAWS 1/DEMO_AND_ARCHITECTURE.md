@@ -90,7 +90,7 @@ The application provides different features based on the user's role. Here are t
 **My Data:**
 *   This section is intended to show users the personal data that the organization processes about them. *(Note: The UI for this page needs improvement, as it currently displays a raw JSON output.)*
 
-**DSR Requests:**
+**DSR:**
 *   Users can submit Data Subject Requests (DSRs), such as the right to access, rectify, or erase their data.
 
 ### 4.2 DPO Role
