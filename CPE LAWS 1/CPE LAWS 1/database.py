@@ -134,7 +134,13 @@ def initialize_database():
         ('User Email Address', 'PII', 'Authentication and Communication', 'User Database (EU)', 'Operational'),
         ('User IP Address', 'PII', 'Security and Analytics', 'Server Logs (US)', 'Security'),
         ('User Name', 'PII', 'Personalization', 'User Database (EU)', 'Operational'),
-        ('User Health Data', 'Sensitive Personal Info', 'Fitness Tracking', 'Encrypted Health Database (EU)', 'Operational')
+        ('User Health Data', 'Sensitive Personal Info', 'Fitness Tracking', 'Encrypted Health Database (EU)', 'Operational'),
+        ('User Phone Number', 'PII', 'Communication', 'Mobile Network (US)', 'Operational'),
+        ('User Location Data', 'PII', 'Geolocation Services', 'Cloud Storage (EU)', 'Marketing'),
+        ('User Payment Information', 'Financial', 'E-commerce Processing', 'Encrypted Payment Gateway', 'Operational'),
+        ('User Device Information', 'Technical', 'System Administration', 'Cloud Infrastructure (US)', 'Security'),
+        ('User Social Security Number', 'Sensitive Personal Info', 'Compliance', 'Secure Database (EU)', 'Legal'),
+        ('User Biometric Data', 'Sensitive Personal Info', 'Security Authentication', 'Encrypted Biometrics Database', 'Security')
     ]
     cursor.executemany('INSERT INTO personal_data_inventory (data_item, category, purpose, storage_location, data_type) VALUES (?, ?, ?, ?, ?)', inventory_to_add)
     print(f"{len(inventory_to_add)} personal data inventory records added.")
