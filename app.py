@@ -809,4 +809,6 @@ def test_submit_page():
     return send_from_directory('.', 'submit_form.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Cloud hosts provide PORT at runtime; retain 5000 as the local default.
+    port = int(os.environ.get('PORT', '5000'))
+    app.run(host='0.0.0.0', port=port, debug=False)
