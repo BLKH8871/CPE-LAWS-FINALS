@@ -231,6 +231,13 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/')
+def index():
+    """Send visitors to login, or to the dashboard if they already have a session."""
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
+
+@app.route('/dashboard')
 @login_required
 def dashboard():
     return render_template('index.html')
