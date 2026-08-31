@@ -733,7 +733,7 @@ def submit_dsr():
 @login_required
 def public_privacy_notices():
     db = get_db()
-    notices = db.execute('SELECT title, version, content, published_at FROM privacy_notices WHERE is_published = 1 ORDER BY published_at DESC').fetchall()
+    notices = db.execute('SELECT title, version, content, published_at FROM privacy_notices WHERE is_published = TRUE ORDER BY published_at DESC').fetchall()
     return jsonify([dict(row) for row in notices])
 
 # --- Export Endpoints ---
